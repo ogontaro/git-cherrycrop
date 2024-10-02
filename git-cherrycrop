@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Function to display usage instructions
+function usage() {
+    echo "Usage: git cherrycrop -b <branch> -p <prefix>"
+    exit 1
+}
+
+# Initialize variables for branch and prefix
+BRANCH=""
+PREFIX=""
+
+# Parse command-line options for branch and prefix
+while getopts "b:p:" opt; do
+  case $opt in
+    b) BRANCH="$OPTARG" ;;  # The branch to cherry-pick into
+    p) PREFIX="$OPTARG" ;;  # The prefix used to filter commits (e.g., ticket number)
+    *) usage ;;             # If incorrect options are provided, display usage
+  esac
+done
+
+# Check if both branch and prefix are provided
+if [ -z "$BRANCH" ] || [ -z "$PREFIX" ]; then
+    usage  # If either branch or prefix is missing, show usage
+fi
+
+# Switch to the specified branch
+echo "Switching to branch: $BRANCH"
+git checkout $BRANCH
+if [ $? -ne 0 ]; then
+    echo "Failed to checkout branch. Please check if the branch exists."
+    exit 1
+fi
+
+# Find and cherry-pick commits with the given prefix in the commit message
+echo "Cherry-picking commits with prefix \"$PREFIX\"..."
+for commit in $(git log --grep="$PREFIX" --pretty=format:"%h")
+do
+    echo "Cherry-picking commit: $commit"
+    git cherry-pick $commit
+    if [ $? -ne 0 ]; then
+        echo "Cherry-pick failed. Please resolve conflicts and continue."
+        exit 1
+    fi
+done
+
+echo "All commits with prefix \"$PREFIX\" have been successfully cherry-picked!"
