@@ -2,18 +2,18 @@
 
 # Function to display usage instructions
 function usage() {
-    echo "Usage: git cherrycrop -b <branch> -p <prefix>"
+    echo "Usage: git cherrycrop -b <source-branch> -p <prefix>"
     exit 1
 }
 
-# Initialize variables for branch and prefix
+# Initialize variables for source branch and prefix
 BRANCH=""
 PREFIX=""
 
 # Parse command-line options for branch and prefix
 while getopts "b:p:" opt; do
   case $opt in
-    b) BRANCH="$OPTARG" ;;  # The branch to cherry-pick into
+    b) BRANCH="$OPTARG" ;;  # The source branch to cherry-pick from
     p) PREFIX="$OPTARG" ;;  # The prefix used to filter commits (e.g., ticket number)
     *) usage ;;             # If incorrect options are provided, display usage
   esac
@@ -24,24 +24,33 @@ if [ -z "$BRANCH" ] || [ -z "$PREFIX" ]; then
     usage  # If either branch or prefix is missing, show usage
 fi
 
-# Switch to the specified branch
-echo "Switching to branch: $BRANCH"
-git checkout $BRANCH
-if [ $? -ne 0 ]; then
-    echo "Failed to checkout branch. Please check if the branch exists."
+# Define a cleanup function to ensure we exit cherry-pick mode if needed
+function cleanup {
+    if git cherry-pick --quit > /dev/null 2>&1; then
+        echo "Exiting cherry-pick mode."
+    fi
+}
+
+# Set trap to ensure cleanup is called on exit, even if there is an error
+trap cleanup EXIT
+
+# Check if the specified branch exists locally
+if ! git show-ref --verify --quiet refs/heads/$BRANCH; then
+    echo "Branch \"$BRANCH\" does not exist locally. Please check the branch name."
     exit 1
 fi
 
-# Find and cherry-pick commits with the given prefix in the commit message
-echo "Cherry-picking commits with prefix \"$PREFIX\"..."
-for commit in $(git log --grep="$PREFIX" --pretty=format:"%h")
+# Find and cherry-pick commits with the given prefix from the specified branch
+echo "Cherry-picking commits from branch \"$BRANCH\" with prefix \"$PREFIX\"..."
+for commit in $(git log $BRANCH --grep="$PREFIX" --pretty=format:"%h")
 do
     echo "Cherry-picking commit: $commit"
     git cherry-pick $commit
     if [ $? -ne 0 ]; then
-        echo "Cherry-pick failed. Please resolve conflicts and continue."
+        echo "Cherry-pick failed due to conflicts. Please resolve conflicts and then run 'git cherry-pick --continue'."
+        echo "You can also skip this commit with 'git cherry-pick --skip' or abort the cherry-pick with 'git cherry-pick --abort'."
         exit 1
     fi
 done
 
-echo "All commits with prefix \"$PREFIX\" have been successfully cherry-picked!"
+echo "All commits with prefix \"$PREFIX\" from branch \"$BRANCH\" have been successfully cherry-picked!"

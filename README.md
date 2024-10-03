@@ -1,7 +1,7 @@
 
 # git cherrycrop
 
-`git cherrycrop` is a custom Git subcommand that allows you to cherry-pick commits based on specific prefixes, such as ticket numbers. This tool helps streamline the process of extracting relevant commits and applying them to different branches.
+`git cherrycrop` is a custom Git subcommand that allows you to cherry-pick commits from a specific local branch based on a prefix in the commit messages. This tool helps streamline the process of extracting relevant commits and applying them to your current branch.
 
 ## Installation
 
@@ -25,26 +25,25 @@ chmod +x /usr/local/bin/git-cherrycrop
 The basic command format for `git cherrycrop` is as follows:
 
 ```bash
-git cherrycrop -b <branch> -p <prefix>
+git cherrycrop -b <source-branch> -p <prefix>
 ```
 
 ### Options:
 
-- `-b <branch>`: The branch where the commits will be cherry-picked to.
+- `-b <source-branch>`: The local branch from which the commits will be cherry-picked.
 - `-p <prefix>`: The prefix to filter commits by (e.g., ticket numbers or specific keywords in commit messages).
 
 ### Example:
 
-If you want to cherry-pick all commits with the prefix `TICKET-1234` into a branch named `feature/branch`, you would run the following command:
+If you want to cherry-pick all commits with the prefix `feat: OG-111` from a local branch named `develop` into your current branch, you would run the following command:
 
 ```bash
-git cherrycrop -b feature/branch -p TICKET-1234
+git cherrycrop -b develop -p "feat: OG-111"
 ```
 
 This will:
-1. Switch to the specified branch (`feature/branch`).
-2. Find all commits that have `TICKET-1234` in their commit messages.
-3. Cherry-pick those commits into the current branch.
+1. Search the local branch (`develop`) for commits with `feat: OG-111` in their commit messages.
+2. Cherry-pick those commits into the current branch.
 
 ### Error Handling:
 
@@ -63,8 +62,8 @@ git cherry-pick --abort
 
 ## How It Works
 
-1. The script searches for commits using the `git log --grep="<prefix>"` command, which looks for commit messages that contain the specified prefix.
-2. The commit hashes are collected, and `git cherry-pick` is applied to each commit individually.
+1. The script searches for commits using the `git log <branch> --grep="<prefix>"` command, which looks for commit messages that contain the specified prefix in the specified branch.
+2. The commit hashes are collected, and `git cherry-pick` is applied to each commit individually on the current branch.
 
 ## Why Use `git cherrycrop`?
 
