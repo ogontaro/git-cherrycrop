@@ -46,11 +46,19 @@ for commit in $(git log $BRANCH --grep="$PREFIX" --pretty=format:"%h")
 do
     echo "Cherry-picking commit: $commit"
     git cherry-pick $commit
+
     if [ $? -ne 0 ]; then
-        echo "Cherry-pick failed due to conflicts. Please resolve conflicts and then run 'git cherry-pick --continue'."
-        echo "You can also skip this commit with 'git cherry-pick --skip' or abort the cherry-pick with 'git cherry-pick --abort'."
-        exit 1
+        # Check if the conflict is due to an empty cherry-pick
+        if git status | grep "The previous cherry-pick is now empty" > /dev/null 2>&1; then
+            echo "Skipping empty commit: $commit"
+            git cherry-pick --skip
+            continue
+        else
+            echo "Cherry-pick failed due to conflicts. Please resolve conflicts and then run 'git cherry-pick --continue'."
+            echo "You can also skip this commit with 'git cherry-pick --skip' or abort the cherry-pick with 'git cherry-pick --abort'."
+            exit 1
+        fi
     fi
 done
 
-echo "All commits with prefix \"$PREFIX\" from branch \"$BRANCH\" have been successfully cherry-picked!"
+echo "All applicable commits with prefix \"$PREFIX\" from branch \"$BRANCH\" have been successfully cherry-picked!"
