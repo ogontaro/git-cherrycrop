@@ -44,12 +44,18 @@ fi
 echo "Cherry-picking commits from branch \"$BRANCH\" with prefix \"$PREFIX\"..."
 for commit in $(git log $BRANCH --grep="$PREFIX" --pretty=format:"%h" --reverse)
 do
+    # Check if the commit is already in the current branch
+    if git cherry -v $BRANCH | grep -q $commit; then
+        echo "Commit $commit is already applied in the current branch, skipping."
+        continue
+    fi
+
     echo "Cherry-picking commit: $commit"
     git cherry-pick $commit
 
     if [ $? -ne 0 ]; then
-        # Check if the conflict is due to an empty cherry-pick
-        if git status | grep "The previous cherry-pick is now empty" > /dev/null 2>&1; then
+        # Automatically skip empty commits without relying on git status output
+        if [ "$(git diff --name-only --cached | wc -l)" -eq 0 ]; then
             echo "Skipping empty commit: $commit"
             git cherry-pick --skip
             continue
