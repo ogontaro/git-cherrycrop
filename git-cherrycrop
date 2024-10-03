@@ -40,9 +40,9 @@ if ! git show-ref --verify --quiet refs/heads/$BRANCH; then
     exit 1
 fi
 
-# Find and cherry-pick commits with the given prefix from the specified branch
+# Find and cherry-pick commits with the given prefix from the specified branch, in reverse order (oldest first)
 echo "Cherry-picking commits from branch \"$BRANCH\" with prefix \"$PREFIX\"..."
-for commit in $(git log $BRANCH --grep="$PREFIX" --pretty=format:"%h")
+for commit in $(git log $BRANCH --grep="$PREFIX" --pretty=format:"%h" --reverse)
 do
     echo "Cherry-picking commit: $commit"
     git cherry-pick $commit
